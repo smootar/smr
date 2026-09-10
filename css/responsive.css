@@ -1,0 +1,239 @@
+/* ========================================
+   Scenic Mountain Roofing — responsive
+   Overrides only. Breakpoints: 1150 / 1024 / 860 / 780 / 640 (mobile) / 560 / 420
+   ======================================== */
+
+/* 641-1150px: all eight nav links, the phone number and the CTA no longer fit
+   on a single line — so the header becomes two rows rather than dropping any of
+   them. Brand + phone + CTA sit on top, the section nav is right-anchored on the
+   row beneath. Nothing is hidden until the mobile breakpoint at 640px.
+
+   1150 is measured, not guessed: with .nav-link set to white-space:nowrap the
+   single row overflows at 1120px. (An earlier 1080 boundary looked fine only
+   because the links were silently shrinking and wrapping their own labels.)
+   --header-h here is a fallback; initHeaderMetrics() publishes the real value
+   as --header-real, since this row's height varies with the link padding. */
+@media (max-width: 1150px) and (min-width: 641px) {
+  :root { --header-h: 124px; }
+
+  .header { height: auto; }
+  .header .container {
+    height: auto;
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: var(--sp-2);
+    padding-block: var(--sp-3);
+  }
+  .brand { order: 1; }
+  .header-cta { order: 2; margin-left: auto; }
+  .nav { order: 3; flex-basis: 100%; margin-left: 0; }
+  /* .nav-inner is the flex row that holds the list, so it is the thing that has
+     to fill the width and push its contents to the right edge. */
+  .nav-inner { width: 100%; justify-content: flex-end; }
+  .nav-list { flex-wrap: wrap; justify-content: flex-end; row-gap: var(--sp-1); }
+}
+
+@media (max-width: 1024px) {
+  .section { padding-block: var(--sp-20); }
+  .nav-link { padding-inline: var(--sp-2); font-size: .84rem; }
+  .header .container { gap: var(--sp-5); }
+  .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .material { grid-template-columns: minmax(0, 1fr); }
+  .material-visual { order: -1; }
+  .contact { grid-template-columns: minmax(0, 1fr); }
+  .split { grid-template-columns: minmax(0, 1fr); gap: var(--sp-6); }
+  .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--sp-10); }
+  .step::before { display: none; }
+}
+
+/* At the narrow end of the two-row band the eight links come to 602px against
+   601px of room, which wraps the row and pushes the header to three rows.
+   Tightening the link padding buys ~64px of headroom. */
+@media (max-width: 780px) and (min-width: 641px) {
+  .nav-link { padding-inline: var(--sp-1); }
+  .nav-list { gap: var(--sp-2); }
+}
+
+@media (max-width: 860px) {
+  .header .container { gap: var(--sp-4); }
+
+  .grid-3 { grid-template-columns: minmax(0, 1fr); }
+  .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); }
+  .stat { padding: var(--sp-6) var(--sp-3); }
+
+  .studio-group { padding: var(--sp-8) var(--sp-6); }
+  .studio-summary { padding: var(--sp-6); }
+  .summary-items { gap: var(--sp-6); }
+
+  .footer-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: var(--sp-10); }
+  .footer-brand { grid-column: 1 / -1; }
+}
+
+/* ===== Mobile view: <=640px =====
+   The section nav becomes a right-anchored drawer that runs the full height to
+   the bottom edge, with the nav links at the top and the two CTAs pinned to the
+   bottom. This is the only range where menu items are behind a toggle. */
+@media (max-width: 640px) {
+  :root { --header-h: 62px; }
+
+  /* CRITICAL: a non-none backdrop-filter makes .header a containing block for
+     fixed-position descendants. .nav lives inside .header, so `inset: 0` would
+     resolve against the header box instead of the viewport and .nav's own
+     overflow:hidden would clip the entire menu away. Drop the blur at the
+     widths where .nav is fixed and use an opaque header instead. */
+  .header {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--surface);
+  }
+
+  .nav-toggle { display: flex; }
+  .header-cta .btn { display: none; }
+  .header-phone span { display: none; }
+
+  /* .nav is a child of .header, so at z-index 95 the open drawer paints over the
+     header's own controls and the toggle disappears — leaving no visible way to
+     close the menu. Lift the controls above it; the toggle already animates to
+     an X via [aria-expanded="true"], so it becomes the close button. */
+  .brand, .nav-toggle, .header-cta { position: relative; z-index: 96; }
+  .header-phone { min-width: 44px; min-height: 44px; justify-content: center; }
+  .header-phone svg { width: 20px; height: 20px; }
+
+  /* `.nav` is a viewport-sized clipper so the off-canvas panel can never extend
+     the document's scrollable width. It stays pointer-transparent at all times
+     so clicks in the empty area fall through to the scrim beneath it. */
+  .nav {
+    position: fixed; inset: 0; z-index: 95;
+    margin-left: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  /* Anchored to the right edge, full height to the bottom edge. */
+  .nav-inner {
+    position: absolute; top: 0; right: 0;
+    display: flex;
+    flex-direction: column;
+    width: min(340px, 86vw); height: 100%;
+    padding: calc(var(--header-real, var(--header-h)) + var(--sp-6)) var(--sp-6)
+             max(var(--sp-8), env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-left: 1px solid var(--line);
+    box-shadow: -18px 0 44px rgba(13,17,23,.16);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transform: translateX(100%);
+    transition: transform .3s var(--ease), visibility .3s var(--ease);
+    pointer-events: auto;
+  }
+  .nav:not(.is-open) .nav-inner { visibility: hidden; }
+  .nav.is-open .nav-inner { transform: translateX(0); visibility: visible; }
+
+  .nav-list { flex-direction: column; align-items: stretch; gap: var(--sp-1); }
+  .nav-link {
+    padding: var(--sp-3) var(--sp-4);
+    font-size: 1.0625rem;
+    min-height: 48px;
+    display: flex; align-items: center;
+    border-radius: var(--r-sm);
+  }
+  .nav-link.is-active { background: var(--accent-soft); color: var(--accent-dark); }
+
+  /* margin-top:auto is what pins the CTAs to the drawer's bottom edge */
+  .nav-cta {
+    display: grid;
+    gap: var(--sp-3);
+    margin-top: auto;
+    padding-top: var(--sp-8);
+    border-top: 1px solid var(--line-soft);
+  }
+  .nav-cta .btn { min-height: 48px; }
+
+  /* Hug the bottom edge past the home indicator on notched phones */
+  .actionbar .container { padding-bottom: max(var(--sp-3), env(safe-area-inset-bottom)); }
+
+  .section { padding-block: var(--sp-16); }
+  .section-head { margin-bottom: var(--sp-10); }
+
+  .hero { padding-block: var(--sp-16); }
+  .hero-logo { margin-bottom: var(--sp-8); }   /* width comes from the clamp in main.css */
+  .hero-title { letter-spacing: .06em; }
+  .hero-actions { flex-direction: column; align-items: stretch; }
+  .hero-actions .btn { width: 100%; }
+  .hero-strip { gap: var(--sp-3) var(--sp-5); margin-top: var(--sp-12); }
+  .hero-strip li { font-size: .7rem; }
+
+  .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); }
+  .steps { grid-template-columns: minmax(0, 1fr); row-gap: var(--sp-8); }
+  .card { padding: var(--sp-6); }
+
+  .swatches { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: var(--sp-3); }
+  .swatches--trim { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); }
+
+  .studio-summary { flex-direction: column; align-items: stretch; }
+  .summary-items { flex-direction: column; gap: var(--sp-4); }
+  .studio-summary .btn { width: 100%; }
+
+  .form-row { grid-template-columns: minmax(0, 1fr); gap: 0; }
+
+  .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  /* Edge-to-edge studio: cancel the page gutter and drop the rounding/border so
+     the panel reads as a full-width band rather than a card in a margin. */
+  .bleed-mobile {
+    margin-inline: calc(var(--gutter) * -1);
+    border-radius: 0;
+    border-inline: none;
+  }
+
+  .actionbar .container { padding-block: var(--sp-3); gap: var(--sp-3); }
+  .actionbar-text .summary-label { font-size: .65rem; }
+  .actionbar-text p { font-size: .8125rem; }
+  .actionbar .btn { padding-inline: var(--sp-4); }
+
+  .footer-bottom { flex-direction: column; gap: var(--sp-2); }
+}
+
+@media (max-width: 560px) {
+  /* Below this the three stat columns can no longer hold their content */
+  .stats { grid-template-columns: minmax(0, 1fr); }
+  .stat { display: flex; align-items: baseline; justify-content: space-between; text-align: left; padding: var(--sp-4) var(--sp-5); }
+  .stat-label { margin-top: 0; }
+}
+
+@media (max-width: 420px) {
+  .grid-4 { grid-template-columns: minmax(0, 1fr); }
+  /* The studio runs full-bleed here, so there is room for a third column */
+  .swatches { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .swatches--trim { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* Clearance for the fixed action bar is reserved on .footer in main.css, using
+   the --actionbar-h that initActionBar() measures at runtime. The bar's label
+   wraps on phones, so a hardcoded height was too short and covered the footer. */
+
+@media print {
+  .header, .actionbar, .nav-scrim, .hero-actions, .studio-summary .btn,
+  .hero-logo, .material-visual { display: none !important; }
+
+  body, body.has-actionbar .footer { padding-bottom: 0 !important; }
+
+  /* Every white-on-dark surface has to be inverted explicitly — setting `color`
+     on an ancestor does not override the direct declarations on these. */
+  .hero, .section--ink, .footer {
+    background: #fff !important;
+    border: none !important;
+  }
+  .hero-title, .hero-sub, .hero-strip li,
+  .section--ink h2, .section--ink h3, .section--ink p, .section--ink .eyebrow,
+  .promise, .footer, .footer p, .footer h3, .footer-links a, .footer-bottom {
+    color: #000 !important;
+    background: transparent !important;
+  }
+  .promise { border: 1px solid #999 !important; }
+
+  /* Expand every accordion so no answer is dropped from the printout */
+  .js .faq-a, .js .faq-item.is-open .faq-a { grid-template-rows: 1fr !important; }
+  .faq-a > div { overflow: visible !important; }
+
+  .js .reveal { opacity: 1 !important; transform: none !important; }
+}
