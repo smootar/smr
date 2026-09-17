@@ -307,31 +307,52 @@
         <div class="section-head section-head--center reveal">
           <p class="eyebrow">Color Studio</p>
           <h2>Choose your colors</h2>
-          <p>Browse the IKO Dynasty palette and our standard trim finishes. Pick a combination you like and send it along with your estimate request — we will bring physical samples to your inspection.</p>
+          <p>Browse the full IKO Dynasty and IKO Armourshake palettes alongside our standard trim finishes. Pick a combination you like and send it along with your estimate request — we will bring physical samples to your inspection.</p>
         </div>
 
         <div class="studio reveal bleed-mobile">
           <div class="studio-group" data-group="shingle">
             <div class="studio-group-head">
               <h3>Shingle color</h3>
-              <span class="studio-count">15 IKO Dynasty options</span>
+              <span class="studio-count">19 options across two IKO lines</span>
             </div>
-            <div class="swatches">
-              <button class="swatch" type="button" aria-pressed="false" data-name="Olde Style Weatherwood"><span class="swatch-chip" style="background:#8a7f6d"></span><span class="swatch-name">Olde Style Weatherwood</span></button>
-              <button class="swatch" type="button" aria-pressed="false" data-name="Granite Black"><span class="swatch-chip" style="background:#2e3134"></span><span class="swatch-name">Granite Black</span></button>
-              <button class="swatch" type="button" aria-pressed="false" data-name="Cornerstone"><span class="swatch-chip" style="background:#7c7366"></span><span class="swatch-name">Cornerstone</span></button>
-              <button class="swatch" type="button" aria-pressed="false" data-name="Atlantic Blue"><span class="swatch-chip" style="background:#3a4a5c"></span><span class="swatch-name">Atlantic Blue</span></button>
-              <button class="swatch" type="button" aria-pressed="false" data-name="Glacier"><span class="swatch-chip" style="background:#99a0a6"></span><span class="swatch-name">Glacier</span></button>
-              <button class="swatch" type="button" aria-pressed="false" data-name="Shadow Brown"><span class="swatch-chip" style="background:#4a3b30"></span><span class="swatch-name">Shadow Brown</span></button>
-              <button class="swatch" type="button" aria-pressed="false" data-name="Summit Grey"><span class="swatch-chip" style="background:#6a7075"></span><span class="swatch-name">Summit Grey</span></button>
-              <button class="swatch" type="button" aria-pressed="false" data-name="Biscayne"><span class="swatch-chip" style="background:#5b6a6a"></span><span class="swatch-name">Biscayne</span></button>
-              <button class="swatch" type="button" aria-pressed="false" data-name="Monaco Red"><span class="swatch-chip" style="background:#6d2f2f"></span><span class="swatch-name">Monaco Red</span></button>
-              <button class="swatch" type="button" aria-pressed="false" data-name="Frostone Grey"><span class="swatch-chip" style="background:#8a9095"></span><span class="swatch-name">Frostone Grey</span></button>
-              <button class="swatch" type="button" aria-pressed="false" data-name="Emerald Green"><span class="swatch-chip" style="background:#2e4a3a"></span><span class="swatch-name">Emerald Green</span></button>
-              <button class="swatch" type="button" aria-pressed="false" data-name="Driftshake"><span class="swatch-chip" style="background:#79726a"></span><span class="swatch-name">Driftshake</span></button>
-              <button class="swatch" type="button" aria-pressed="false" data-name="Brownstone"><span class="swatch-chip" style="background:#594436"></span><span class="swatch-name">Brownstone</span></button>
-              <button class="swatch" type="button" aria-pressed="false" data-name="Sentinel Slate"><span class="swatch-chip" style="background:#4b5158"></span><span class="swatch-name">Sentinel Slate</span></button>
-              <button class="swatch" type="button" aria-pressed="false" data-name="Blackstone"><span class="swatch-chip" style="background:#232629"></span><span class="swatch-name">Blackstone</span></button>
+
+            <!-- Both product lines share one data-group on purpose: a customer picks
+                 ONE shingle, so the two lines must be mutually exclusive, and the
+                 choice has to ride along in the single "Shingle color" form field.
+                 color-studio.js collects swatches with a descendant query, so these
+                 nested sub-sections need no JS change. The product line lives in
+                 data-name (not the visible label) because that is what reaches the
+                 Sheet, and Tayton needs it to quote — the two lines differ in price. -->
+            <div class="swatch-line">
+              <h4 class="swatch-line-head">IKO Dynasty <span>architectural &middot; 15 colors</span></h4>
+              <div class="swatches">
+              <button class="swatch" type="button" aria-pressed="false" data-name="Dynasty — Olde Style Weatherwood"><span class="swatch-chip" style="background-color:#8a7f6d"></span><span class="swatch-name">Olde Style Weatherwood</span></button>
+              <button class="swatch" type="button" aria-pressed="false" data-name="Dynasty — Granite Black"><span class="swatch-chip" style="background-color:#2e3134"></span><span class="swatch-name">Granite Black</span></button>
+              <button class="swatch" type="button" aria-pressed="false" data-name="Dynasty — Cornerstone"><span class="swatch-chip" style="background-color:#7c7366"></span><span class="swatch-name">Cornerstone</span></button>
+              <button class="swatch" type="button" aria-pressed="false" data-name="Dynasty — Atlantic Blue"><span class="swatch-chip" style="background-color:#3a4a5c"></span><span class="swatch-name">Atlantic Blue</span></button>
+              <button class="swatch" type="button" aria-pressed="false" data-name="Dynasty — Glacier"><span class="swatch-chip" style="background-color:#99a0a6"></span><span class="swatch-name">Glacier</span></button>
+              <button class="swatch" type="button" aria-pressed="false" data-name="Dynasty — Shadow Brown"><span class="swatch-chip" style="background-color:#4a3b30"></span><span class="swatch-name">Shadow Brown</span></button>
+              <button class="swatch" type="button" aria-pressed="false" data-name="Dynasty — Summit Grey"><span class="swatch-chip" style="background-color:#6a7075"></span><span class="swatch-name">Summit Grey</span></button>
+              <button class="swatch" type="button" aria-pressed="false" data-name="Dynasty — Biscayne"><span class="swatch-chip" style="background-color:#5b6a6a"></span><span class="swatch-name">Biscayne</span></button>
+              <button class="swatch" type="button" aria-pressed="false" data-name="Dynasty — Monaco Red"><span class="swatch-chip" style="background-color:#6d2f2f"></span><span class="swatch-name">Monaco Red</span></button>
+              <button class="swatch" type="button" aria-pressed="false" data-name="Dynasty — Frostone Grey"><span class="swatch-chip" style="background-color:#8a9095"></span><span class="swatch-name">Frostone Grey</span></button>
+              <button class="swatch" type="button" aria-pressed="false" data-name="Dynasty — Emerald Green"><span class="swatch-chip" style="background-color:#2e4a3a"></span><span class="swatch-name">Emerald Green</span></button>
+              <button class="swatch" type="button" aria-pressed="false" data-name="Dynasty — Driftshake"><span class="swatch-chip" style="background-color:#79726a"></span><span class="swatch-name">Driftshake</span></button>
+              <button class="swatch" type="button" aria-pressed="false" data-name="Dynasty — Brownstone"><span class="swatch-chip" style="background-color:#594436"></span><span class="swatch-name">Brownstone</span></button>
+              <button class="swatch" type="button" aria-pressed="false" data-name="Dynasty — Sentinel Slate"><span class="swatch-chip" style="background-color:#4b5158"></span><span class="swatch-name">Sentinel Slate</span></button>
+              <button class="swatch" type="button" aria-pressed="false" data-name="Dynasty — Blackstone"><span class="swatch-chip" style="background-color:#232629"></span><span class="swatch-name">Blackstone</span></button>
+              </div>
+            </div>
+
+            <div class="swatch-line">
+              <h4 class="swatch-line-head">IKO Armourshake <span>premium designer &middot; 4 colors</span></h4>
+              <div class="swatches">
+              <button class="swatch" type="button" aria-pressed="false" data-name="Armourshake — Chalet Wood"><span class="swatch-chip" style="background-color:#6f5842"></span><span class="swatch-name">Chalet Wood</span></button>
+              <button class="swatch" type="button" aria-pressed="false" data-name="Armourshake — Greystone"><span class="swatch-chip" style="background-color:#7a7d7c"></span><span class="swatch-name">Greystone</span></button>
+              <button class="swatch" type="button" aria-pressed="false" data-name="Armourshake — Shadow Black"><span class="swatch-chip" style="background-color:#26282c"></span><span class="swatch-name">Shadow Black</span></button>
+              <button class="swatch" type="button" aria-pressed="false" data-name="Armourshake — Weathered Stone"><span class="swatch-chip" style="background-color:#989289"></span><span class="swatch-name">Weathered Stone</span></button>
+              </div>
             </div>
           </div>
 
@@ -387,9 +408,11 @@
         </div>
 
         <p class="studio-note">
-          Swatches are on-screen approximations. Screen color varies by display, and shingle color
-          varies by production run and lighting — always confirm against a physical sample before
-          you commit.
+          Swatches are on-screen approximations, not manufacturer color chips. Screen color varies
+          by display, and shingle color varies by production run and lighting — a real shingle is a
+          blend of granule tones that no flat square reproduces. Always confirm against a physical
+          sample before you commit. Availability also varies by market; we will confirm what is
+          orderable when we quote.
         </p>
       </div>
     </section>
