@@ -41,23 +41,41 @@
       return document.querySelector('#estimateForm [data-choice="' + key + '"]');
     }
 
-    function paint(key, name, swatchStyle) {
+    /**
+     * `label` is what the customer and the estimate both see, so for a shingle it
+     * carries the product line as well as the colour ("IKO Dynasty® Granite
+     * Black") — the two lines have separate palettes and the colour name alone
+     * does not say which shingle to order. `tone` is a CSS colour and `image` an
+     * optional swatch photo URL for the summary dot.
+     */
+    function paint(key, label, tone, image) {
       var summary = summaryFor(key);
       if (summary) {
         var value = summary.querySelector('.summary-value');
         var dot = summary.querySelector('.summary-dot');
         if (value) {
-          value.textContent = name || 'Not selected';
-          value.classList.toggle('is-empty', !name);
+          value.textContent = label || 'Not selected';
+          value.classList.toggle('is-empty', !label);
         }
         if (dot) {
-          dot.style.background = name ? swatchStyle : '';
-          if (!name) dot.removeAttribute('style');
+          if (!label) dot.removeAttribute('style');
+          else {
+            dot.style.background = tone;
+            if (image) dot.style.backgroundImage = 'url("' + image + '")';
+          }
         }
       }
 
       var hidden = hiddenFor(key);
-      if (hidden) hidden.value = name || '';
+      if (hidden) hidden.value = label || '';
+    }
+
+    // The shingle group holds one grid per product line; collecting every swatch
+    // under the group — not per grid — is what keeps the choice single across both.
+    function labelOf(button) {
+      var line = button.getAttribute('data-line');
+      var name = button.getAttribute('data-name');
+      return line ? line + ' ' + name : name;
     }
 
     groups.forEach(function (group) {
@@ -67,14 +85,18 @@
       function select(button, persist) {
         swatches.forEach(function (s) { s.setAttribute('aria-pressed', String(s === button)); });
 
-        var name = button.getAttribute('data-name');
+        var label = labelOf(button);
         var chip = button.querySelector('.swatch-chip');
-        var style = chip ? window.getComputedStyle(chip).backgroundColor : '';
+        var tone = chip ? window.getComputedStyle(chip).backgroundColor : '';
+        // currentSrc so the dot reuses whichever ladder rung the chip already
+        // fetched, rather than pulling a second file.
+        var img = button.querySelector('.swatch-chip img');
+        var image = img ? (img.currentSrc || img.src) : '';
 
-        paint(key, name, style);
+        paint(key, label, tone, image);
 
         if (persist) {
-          state[key] = name;
+          state[key] = label;
           writeStore(state);
         }
       }
@@ -83,10 +105,12 @@
         button.addEventListener('click', function () { select(button, true); });
       });
 
-      // Restore a prior selection
+      // Restore a prior selection. Matching on the composed label is also what
+      // discards a value stored before the shingle palette changed, instead of
+      // restoring a colour we no longer offer.
       if (state[key]) {
         var restored = swatches.filter(function (s) {
-          return s.getAttribute('data-name') === state[key];
+          return labelOf(s) === state[key];
         })[0];
         if (restored) select(restored, false);
         else { delete state[key]; writeStore(state); }

@@ -109,6 +109,10 @@ h3 { font-size: clamp(1.1rem, 1.7vw, 1.3rem); letter-spacing: -0.01em; }
 h4 { font-size: 1rem; letter-spacing: 0; font-weight: 700; }
 p  { color: var(--slate-600); }
 strong { color: var(--ink); font-weight: 600; }
+/* Every <sup> on the page is a trademark mark on a product name — Dynasty(R),
+   Armourshake(TM), ArmourZone(TM). normalize's 75% reads oversized against a
+   display heading, so they are dialled back here rather than per component. */
+sup { font-size: .6em; margin-left: .04em; }
 
 .eyebrow {
   font-family: var(--font-body);
@@ -417,6 +421,13 @@ strong { color: var(--ink); font-weight: 600; }
 .studio-group-head h3 { font-size: 1.05rem; }
 .studio-count { font-size: .8125rem; color: var(--slate-500); }
 
+/* Each shingle line we carry is its own labelled band inside the one shingle
+   group, so both products read as options while the selection stays single. */
+.shingle-line + .shingle-line { margin-top: var(--sp-8); padding-top: var(--sp-8); border-top: 1px solid var(--line-soft); }
+.shingle-line-head { margin-bottom: var(--sp-5); }
+.shingle-line-head h4 { font-size: .95rem; letter-spacing: .01em; }
+.shingle-line-head p { margin-top: var(--sp-2); max-width: var(--measure); font-size: .875rem; color: var(--slate-600); }
+
 .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: var(--sp-4); }
 .swatch {
   display: flex; flex-direction: column; gap: var(--sp-3);
@@ -428,27 +439,36 @@ strong { color: var(--ink); font-weight: 600; }
 }
 .swatch:hover { background: var(--surface-2); transform: translateY(-2px); }
 .swatch[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+/* Shingle chips hold IKO's swatch photography; trim chips are a flat colour and
+   keep the inset shading that gives them some depth. The chip's inline
+   `background` is the photo's average tone, so it reads as the right colour
+   before the image lands (and if it never does). */
 .swatch-chip {
   position: relative;
   aspect-ratio: 4 / 3;
   border-radius: var(--r-sm);
   border: 1px solid rgba(13,17,23,.14);
-  box-shadow: inset 0 -14px 22px rgba(0,0,0,.14), inset 0 1px 0 rgba(255,255,255,.14);
-  background-blend-mode: overlay, normal;
+  overflow: hidden;
 }
-.swatch-chip::after {
-  content: ''; position: absolute; inset: 0; border-radius: inherit;
-  background-image: repeating-linear-gradient(
-    180deg, rgba(255,255,255,.09) 0 2px, rgba(0,0,0,.07) 2px 4px, transparent 4px 11px);
-  opacity: .85;
+.swatch-chip picture, .swatch-chip img {
+  display: block; width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
 }
-.swatch[aria-pressed="true"] .swatch-chip { box-shadow: inset 0 -14px 22px rgba(0,0,0,.14), 0 0 0 2px #fff, 0 0 0 4px var(--accent); }
+.swatch[aria-pressed="true"] .swatch-chip { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--accent); }
 .swatch-name { font-size: .8125rem; font-weight: 600; color: var(--ink); line-height: 1.35; }
+
+/* Roomier chips for the shingle photos — at the 112px default the granule
+   pattern is too small to tell two brown blends apart. Deliberately one class
+   deep, not `.shingle-line .swatches`: responsive.css narrows `.swatches` on
+   phones, and a two-class selector here would outrank it whatever the load
+   order. */
+.swatches--shingle { grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); }
 
 /* compact chips for trim colors */
 .swatches--trim { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
 .swatches--trim .swatch-chip { aspect-ratio: 1 / 1; box-shadow: inset 0 -8px 16px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.2); }
-.swatches--trim .swatch-chip::after { background-image: none; }
+.swatches--trim .swatch[aria-pressed="true"] .swatch-chip { box-shadow: inset 0 -8px 16px rgba(0,0,0,.12), 0 0 0 2px #fff, 0 0 0 4px var(--accent); }
 .swatches--trim .swatch-name { font-size: .75rem; }
 
 .studio-summary {
@@ -460,10 +480,18 @@ strong { color: var(--ink); font-weight: 600; }
 }
 .summary-items { display: flex; gap: var(--sp-8); flex-wrap: wrap; }
 .summary-item { display: flex; align-items: center; gap: var(--sp-3); }
+/* Caption over value, same as .contact-method does. Inline they collide
+   ("SHINGLEIKO Armourshake™ Chalet Wood"), and the shingle value now carries
+   the product line as well as the colour, so it is long enough to show. */
+.summary-item .summary-label { display: block; }
 .summary-dot {
   width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
   border: 1px solid rgba(13,17,23,.16);
+  /* The hatch is the empty state. A picked shingle gets its swatch photo
+     painted in by color-studio.js, which is why cover/center sit here. */
   background: repeating-linear-gradient(135deg, var(--line-soft) 0 5px, var(--surface-3) 5px 10px);
+  background-size: cover;
+  background-position: 50% 50%;
 }
 .summary-label { font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--slate-600); }
 .summary-value { font-size: .9rem; font-weight: 600; color: var(--ink); }

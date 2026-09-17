@@ -14,6 +14,8 @@ The whole site is `index.html` — every section lives there, including both JSO
 python3 -m http.server 8000            # serve at http://localhost:8000
 lsof -ti:8000 | xargs kill             # stop it
 python3 tools/build-logo-assets.py     # regenerate every logo derivative
+python3 tools/fetch-shingle-sources.py # re-pull IKO's shingle swatch photos
+python3 tools/build-shingle-assets.py  # regenerate the shingle swatch chips
 node --check js/main.js                # syntax check (no linter configured)
 ```
 
@@ -50,7 +52,7 @@ Two helpers exist for going past the gutter: `.bleed` cancels it outright, and `
 **Two scripts, both deferred, no dependencies, no load-order coupling.**
 
 - `js/main.js` — sticky-header state, mobile nav, scroll-spy, FAQ accordion, reveal-on-scroll, sticky action bar, form validation, and the success banner. Each concern is its own `initX()` behind a single `init()`.
-- `js/color-studio.js` — swatch selection, the live summary row, `localStorage` persistence under `smr.colors.v1`, and writing the chosen color names into the form's hidden `data-choice` inputs so they ride along with the estimate request.
+- `js/color-studio.js` — swatch selection, the live summary row, `localStorage` persistence under `smr.colors.v1`, and writing the chosen color names into the form's hidden `data-choice` inputs so they ride along with the estimate request. The shingle value carries its product line too — see the Color Studio section below.
 
 ### The header has three modes, and none of them hide a menu item
 
@@ -154,6 +156,7 @@ Neither keys off `name`. **Keep `data-choice` on those three inputs.**
 - Section `id`s are load-bearing three times over: the nav links, the footer links, and `initScrollSpy()`/`initActionBar()` in `js/main.js` all key off them. Renaming one silently breaks scroll-spy.
 - Contact details (phone `801-473-7448`, email) appear in the header, the estimate section, the footer, and the JSON-LD. Grep before editing. The email is deliberately **not** in the form's `action` any more — that is what published the mailbox in the markup under FormSubmit.
 - `sitemap.xml`, `robots.txt`, the canonical tag and the OG/Twitter URLs all hardcode the production host.
+- Which shingle lines we offer is asserted in four places: the Color Studio's `.shingle-line` bands, the `<meta name="description">`, the Roof Replacement offer in the `RoofingContractor` JSON-LD, and the Materials section's heading. Add or drop a line in the studio and all four have to move together.
 
 ## The Sheet-side spam filter
 
@@ -185,12 +188,61 @@ Three things to know before changing it:
 
 ## Image assets
 
-Two pipelines, and they are deliberately different because the content is different:
+Three pipelines, and they are deliberately different because the content is different:
 
 - **Logos** (`images/logo/`, built by `tools/build-logo-assets.py`) — line art, so **WebP + PNG** with transparency.
 - **Photographs** (`images/roofs/`, built by `tools/build-photo-assets.py`) — **WebP + JPEG**. PNG roughly triples the bytes on photographic content, and photos carry no useful transparency. Sources are `*-source.*`, discovered by glob and never served; the width ladder is capped by the source's own resolution rather than upscaling.
+- **Shingle swatches** (`images/shingles/`, built by `tools/build-shingle-assets.py`) — **WebP + JPEG** at 160/240/320/440, every one centre-cropped to the 4/3 of `.swatch-chip`. Sources come from IKO via `tools/fetch-shingle-sources.py` (see below).
 
 The Materials panel (`.material-visual`) holds a photograph, so it has no padding and the image fills the frame at its natural aspect ratio — no `object-fit` cropping. Two things there are easy to get wrong: `.material` uses `align-items: start`, because the photo is much shorter than the spec list and centering leaves it floating in dead space; and `.badge-float` is *dark* glass, because it sits over bright sky rather than over the dark panel it was originally designed against.
+
+## The Color Studio's shingle swatches
+
+The shingle chips are **IKO's own product photography**, not flat color. That is
+the point of them: a flat color chip reads as a metal panel, and we sell asphalt
+shingle. The trim groups (drip edge, accessories) stay flat color, because those
+really are painted metal.
+
+Only the two lines we install are offered — **Dynasty®** and **Armourshake™** —
+and the ®/™ are part of the product names, so they belong anywhere either name
+appears (`<sup>` in prose, bare character in `data-line`). A shared
+`sup { font-size: .6em }` rule in `main.css` covers all of them.
+
+`tools/fetch-shingle-sources.py` re-derives the swatches from
+`iko.com/na/dynasty/` and `iko.com/na/armourshake/`. Four things about it:
+
+- **The colour→photo map is read from `<label class="product-colors__item"
+  data-title='Glacier'>`**, which holds the name and the swatch URL in the same
+  element. Do not re-derive it from document order: those pages also carry
+  installed-roof gallery photos per colour, and zipping those against a separate
+  name list is how every chip ends up labelled one colour off.
+- **Colours not sold in Utah are skipped.** The page's
+  `<script type="application/json">{"swatches":…}` blob lists each colour's
+  states. Dynasty **Sentinel Slate** is excluded for that reason (it was on the
+  page before this); if IKO's availability changes, re-running the script is what
+  picks it up.
+- **Dynasty Glacier really is a dark blend**, despite the name. IKO's swatch art
+  and their installed-roof photos for it agree. It is not a broken mapping — do
+  not "fix" it.
+- Sources are downscaled to 720px on save. Served chips top out at 440px, so the
+  full ~1400–2000px originals would add ~22MB to the repo for nothing.
+
+Two things in the markup are load-bearing:
+
+- **Each line is a `.shingle-line` band inside the one `data-group="shingle"`.**
+  `color-studio.js` collects `.swatch` per *group*, not per grid, which is what
+  keeps the choice single across both lines. Splitting them into two
+  `data-group`s would let a customer pick one of each.
+- **`data-line` + `data-name` compose the value** that reaches the summary, the
+  hidden input and the Sheet ("IKO Dynasty® Granite Black"). The colour name
+  alone does not say which shingle to order. It is also the `localStorage` key,
+  so a value stored before the palette changed no longer matches and is dropped
+  rather than restored.
+
+- `.swatches--shingle` widens the grid's minimum track to 136px, and is
+  deliberately **one class deep**. `.shingle-line .swatches` would outrank
+  responsive.css's `.swatches` overrides whatever the load order, and silently
+  undo the phone layout.
 
 ## Logo assets
 
