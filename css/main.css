@@ -645,7 +645,9 @@ strong { color: var(--ink); font-weight: 600; }
 .field textarea.has-error ~ .field-error,
 .field select.has-error ~ .field-error { display: block; }
 .form-fineprint { margin-top: var(--sp-4); font-size: .8125rem; color: var(--slate-500); text-align: center; }
-.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+/* Off-screen utility. Hides the Google Forms sink iframe; border:0 stops the
+   iframe painting a default hairline if it is ever scrolled into view. */
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; border: 0; }
 
 .form-banner {
   display: flex; align-items: center; gap: var(--sp-3);

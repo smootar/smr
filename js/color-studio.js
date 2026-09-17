@@ -101,9 +101,8 @@
         if (!target) return;
         var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
-        // Must not be `input:not([type="hidden"])` — the first such input is the
-        // FormSubmit `_honey` spam trap, and focusing it sends the visitor's
-        // keystrokes into the honeypot, which silently discards the submission.
+        // Scoped to `.field` on purpose: the form also carries this studio's three
+        // hidden colour inputs, and focus has to land on First name.
         var firstField = document.querySelector('#estimateForm .field input, #estimateForm .field select');
         if (firstField) window.setTimeout(function () { firstField.focus(); }, reduce ? 0 : 600);
       });
