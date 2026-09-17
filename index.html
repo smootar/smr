@@ -630,25 +630,28 @@
               <span>Thanks — your request is in. We will reach out shortly to schedule your inspection.</span>
             </div>
 
-            <form id="estimateForm" action="https://formsubmit.co/tayton@scenicmtnroofing.com" method="POST" novalidate>
-              <input type="text" name="_honey" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
-              <input type="hidden" name="_captcha" value="false">
-              <input type="hidden" name="_subject" value="New estimate request — Scenic Mountain Roofing">
-              <input type="hidden" name="_template" value="table">
-              <input type="hidden" name="_next" value="https://scenicmtnroofing.com/?sent=true#estimate">
-              <input type="hidden" name="Shingle color" data-choice="shingle" value="">
-              <input type="hidden" name="Drip edge color" data-choice="dripEdge" value="">
-              <input type="hidden" name="Accessory color" data-choice="accessories" value="">
+            <!-- Posts to the "Scenic Mountain Roofing Estimate Request" Google Form,
+                 which files each response in the linked Sheet. Every `entry.NNNNNNNN`
+                 below is opaque on its own — the field map lives in CLAUDE.md, and the
+                 ids come from the form's pre-filled link. Renaming a question in Google
+                 Forms does not change its entry id; deleting and re-adding one does.
+                 `target` keeps the browser on this page; the sink iframe sits after
+                 the form and js/main.js watches it to raise the success banner. -->
+            <form id="estimateForm" action="https://docs.google.com/forms/d/e/1FAIpQLScJNKMvpT5LAiZ78-OQ73lotqMZYMWKM4Dv9E2aBfNwNQ5kLA/formResponse"
+                  method="POST" target="gform-sink" novalidate>
+              <input type="hidden" name="entry.2086881091" data-choice="shingle" value="">
+              <input type="hidden" name="entry.1904808225" data-choice="dripEdge" value="">
+              <input type="hidden" name="entry.1609525074" data-choice="accessories" value="">
 
               <div class="form-row">
                 <div class="field">
                   <label for="firstName">First name <span class="req">*</span></label>
-                  <input id="firstName" name="First name" type="text" autocomplete="given-name" required aria-describedby="firstName-error">
+                  <input id="firstName" name="entry.1893097684" type="text" autocomplete="given-name" required aria-describedby="firstName-error">
                   <span class="field-error" id="firstName-error">Please enter your first name.</span>
                 </div>
                 <div class="field">
                   <label for="lastName">Last name <span class="req">*</span></label>
-                  <input id="lastName" name="Last name" type="text" autocomplete="family-name" required aria-describedby="lastName-error">
+                  <input id="lastName" name="entry.1696482588" type="text" autocomplete="family-name" required aria-describedby="lastName-error">
                   <span class="field-error" id="lastName-error">Please enter your last name.</span>
                 </div>
               </div>
@@ -656,25 +659,25 @@
               <div class="form-row">
                 <div class="field">
                   <label for="phone">Phone <span class="req">*</span></label>
-                  <input id="phone" name="Phone" type="tel" autocomplete="tel" placeholder="801-555-0100" required aria-describedby="phone-error">
+                  <input id="phone" name="entry.516867786" type="tel" autocomplete="tel" placeholder="801-555-0100" required aria-describedby="phone-error">
                   <span class="field-error" id="phone-error">Please enter a phone number we can reach you at.</span>
                 </div>
                 <div class="field">
                   <label for="email">Email <span class="req">*</span></label>
-                  <input id="email" name="Email" type="email" autocomplete="email" placeholder="you@example.com" required aria-describedby="email-error">
+                  <input id="email" name="entry.1885411435" type="email" autocomplete="email" placeholder="you@example.com" required aria-describedby="email-error">
                   <span class="field-error" id="email-error">Please enter a valid email address.</span>
                 </div>
               </div>
 
               <div class="field">
                 <label for="city">City <span class="req">*</span></label>
-                <input id="city" name="City" type="text" autocomplete="address-level2" placeholder="Provo, Heber, Ogden…" required aria-describedby="city-error">
+                <input id="city" name="entry.430516647" type="text" autocomplete="address-level2" placeholder="Provo, Heber, Ogden…" required aria-describedby="city-error">
                 <span class="field-error" id="city-error">Please tell us which city you are in.</span>
               </div>
 
               <div class="field">
                 <label for="service">What do you need?</label>
-                <select id="service" name="Service needed">
+                <select id="service" name="entry.196699051">
                   <option>Full roof replacement</option>
                   <option>Roof repair</option>
                   <option>Free inspection / not sure yet</option>
@@ -686,12 +689,17 @@
 
               <div class="field">
                 <label for="details">Anything else we should know?</label>
-                <textarea id="details" name="Details" rows="4" placeholder="Age of the roof, any leaks, whether a claim is already open…"></textarea>
+                <textarea id="details" name="entry.2053253750" rows="4" placeholder="Age of the roof, any leaks, whether a claim is already open…"></textarea>
               </div>
 
               <button class="btn btn-primary btn-block" type="submit">Request My Free Estimate</button>
               <p class="form-fineprint">No obligation. We will never share your information.</p>
             </form>
+
+            <!-- Catches the cross-origin Google Forms response so the page does not
+                 navigate away. Reuses the off-screen .hp rule. -->
+            <iframe id="gformSink" name="gform-sink" class="hp" title="Form submission target"
+                    aria-hidden="true" tabindex="-1"></iframe>
           </div>
         </div>
       </div>

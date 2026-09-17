@@ -287,22 +287,51 @@
         e.preventDefault();
         firstBad.focus();
         firstBad.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+        return;
       }
+
+      // Validation passed, so the browser is POSTing into the hidden sink iframe and
+      // the page stays put. Google's response is cross-origin and opaque: `load`
+      // fires whether the submission was accepted or rejected, so this confirms the
+      // request completed, not that it succeeded. Nothing client-side can tell the
+      // difference — see the Google Forms notes in CLAUDE.md.
+      var sink = document.getElementById('gformSink');
+      if (!sink) return;
+
+      sink.addEventListener('load', function () {
+        showSuccessBanner();
+
+        // form.reset() blanks the Color Studio's hidden inputs, and paint() in
+        // color-studio.js is the only thing that ever writes them — it would not run
+        // again until the visitor picked another swatch. Carry them over the reset.
+        var colors = Array.prototype.slice.call(form.querySelectorAll('[data-choice]'))
+          .map(function (input) { return { input: input, value: input.value }; });
+
+        form.reset();
+        colors.forEach(function (saved) { saved.input.value = saved.value; });
+      }, { once: true });
     });
   }
 
-  /* ── Success banner after form redirect ─ */
-  function initSuccessBanner() {
+  /* ── Success banner ─────────────────── */
+  /* Raised two ways: by initForm() once the sink iframe reports the POST came back,
+     and by initSuccessBanner() for the legacy ?sent=true redirect, which still works
+     if anyone reaches the page by that old URL. */
+  function showSuccessBanner() {
     var banner = document.getElementById('formSuccess');
     if (!banner) return;
-
-    var params = new URLSearchParams(window.location.search);
-    if (params.get('sent') !== 'true') return;
 
     banner.hidden = false;
     banner.setAttribute('tabindex', '-1');
     banner.focus({ preventScroll: true });
     banner.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+  }
+
+  function initSuccessBanner() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('sent') !== 'true') return;
+
+    showSuccessBanner();
 
     // Drop the query string so a refresh doesn't re-show it
     if (window.history.replaceState) {

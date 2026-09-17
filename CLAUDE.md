@@ -49,7 +49,7 @@ Two helpers exist for going past the gutter: `.bleed` cancels it outright, and `
 
 **Two scripts, both deferred, no dependencies, no load-order coupling.**
 
-- `js/main.js` — sticky-header state, mobile nav, scroll-spy, FAQ accordion, reveal-on-scroll, sticky action bar, form validation, and the `?sent=true` success banner. Each concern is its own `initX()` behind a single `init()`.
+- `js/main.js` — sticky-header state, mobile nav, scroll-spy, FAQ accordion, reveal-on-scroll, sticky action bar, form validation, and the success banner. Each concern is its own `initX()` behind a single `init()`.
 - `js/color-studio.js` — swatch selection, the live summary row, `localStorage` persistence under `smr.colors.v1`, and writing the chosen color names into the form's hidden `data-choice` inputs so they ride along with the estimate request.
 
 ### The header has three modes, and none of them hide a menu item
@@ -77,12 +77,111 @@ In the drawer, `.nav-cta` uses `margin-top: auto` to pin the two CTAs to the bot
 
 Related trap: `.form-banner` sets `display: flex`, which beats the UA stylesheet's `[hidden] { display: none }`. `.form-banner[hidden]` restores it explicitly. Any new component styled with an explicit `display` and toggled via the `hidden` attribute needs the same guard.
 
+### The estimate form
+
+The form POSTs to a **Google Form**, which files each response in its linked Sheet.
+There is no backend of our own and no third-party relay.
+
+The live form is **Scenic Mountain Roofing Estimate Request**
+(`https://forms.gle/TiGAfcJNZ7sqW6cj9`). Its id sits in the form's `action`:
+
+```
+https://docs.google.com/forms/d/e/1FAIpQLScJNKMvpT5LAiZ78-OQ73lotqMZYMWKM4Dv9E2aBfNwNQ5kLA/formResponse
+```
+
+`name="entry.NNNNNNNN"` is unreadable on its own, so the map lives here. **This table is
+the only record of which id is which field** — keep it in step with `index.html`:
+
+| Field | `name` |
+| --- | --- |
+| First name | `entry.1893097684` |
+| Last name | `entry.1696482588` |
+| Phone | `entry.516867786` |
+| Email | `entry.1885411435` |
+| City | `entry.430516647` |
+| Service needed | `entry.196699051` |
+| Details | `entry.2053253750` |
+| Shingle color | `entry.2086881091` |
+| Drip edge color | `entry.1904808225` |
+| Accessory color | `entry.1609525074` |
+
+The Google Form's questions are still titled with the build-time sentinels
+(`FIRSTNAME`, `LASTNAME`, …), which is what the Sheet's column headers read. Renaming a
+question to a human label is safe — **an entry id survives a rename**; it does not survive
+deleting and re-adding the question, which mints a new id and silently drops that field.
+
+To re-derive the ids at any time: `curl -sL https://forms.gle/TiGAfcJNZ7sqW6cj9` and parse
+`FB_PUBLIC_LOAD_DATA_` — every question's title and entry id are in it, no auth needed.
+
+**Five things here are easy to get wrong:**
+
+- **Every Google Form question must be short-answer and optional.** A dropdown
+  rejects any value that is not an exact option-string match, and the rejection is
+  invisible to us. The page's own `<select>` already constrains "Service needed".
+- **The Workspace defaults will silently eat every submission.** A form created
+  inside the org defaults to restricting responses to it. "Restrict responses to
+  users in Scenic Mountain Roofing", "Collect email addresses" and "Limit to 1
+  response" must all be **off**, or anonymous POSTs from the site redirect to a
+  Google login and vanish.
+- **Success is a guess.** The form targets `#gformSink`, a hidden iframe. Google's
+  response is cross-origin, so its `load` event fires identically whether the
+  submission was accepted or rejected. Nothing client-side can tell the difference.
+  After changing anything here, confirm a row actually lands in the Sheet — the
+  banner is not evidence.
+- **Nothing can be filtered *before* the write, and no client-side check is worth
+  adding.** The browser POSTs straight to Google, so no code of ours sits in the
+  path: a honeypot, time trap, rate limit or Turnstile token has nowhere to be
+  verified. A bot reads the form id out of the page source and POSTs `entry.*`
+  params directly — it never loads the HTML or runs the JS, and a hidden honeypot
+  field is not even a question on the form, so Google discards it and accepts the
+  rest. Filtering happens *after* the write instead, in `tools/sheet-spam-filter.gs`
+  (see below). Blocking the write needs one server hop — an Apps Script web app the
+  form posts to, which can verify a Cloudflare Turnstile token via `UrlFetchApp`.
+- **There is no IP address anywhere in this stack.** Google Forms does not record
+  one, and Apps Script never sees the request — neither an `onFormSubmit` event nor
+  a web app's `doPost(e)` exposes the client IP or any header. Per-IP rate limiting
+  is therefore not merely unimplemented but unavailable; velocity has to be inferred
+  from timestamps and content instead. Real IPs need code at an edge (a Cloudflare
+  Worker, a Netlify/Vercel function), which a static host does not give you.
+
+Renaming a `name` is safe: `initForm()` in `js/main.js` selects fields by attribute
+and type, and `color-studio.js` resolves the hidden colour inputs via `data-choice`.
+Neither keys off `name`. **Keep `data-choice` on those three inputs.**
+
 ## Content that must stay in sync
 
 - Both `application/ld+json` blocks are in `index.html`: a `RoofingContractor` block (contact details, `areaServed`, `hasOfferCatalog` of services) and an `FAQPage` block. **Google requires the FAQ markup to match the visible accordion text exactly** — edit a question or answer and you must edit it in both places.
 - Section `id`s are load-bearing three times over: the nav links, the footer links, and `initScrollSpy()`/`initActionBar()` in `js/main.js` all key off them. Renaming one silently breaks scroll-spy.
-- Contact details (phone `801-473-7448`, email) appear in the header, the estimate section, the footer, the form's `action`, and the JSON-LD. Grep before editing.
-- `sitemap.xml`, `robots.txt`, the canonical tag, the OG/Twitter URLs and the form's `_next` all hardcode the production host.
+- Contact details (phone `801-473-7448`, email) appear in the header, the estimate section, the footer, and the JSON-LD. Grep before editing. The email is deliberately **not** in the form's `action` any more — that is what published the mailbox in the markup under FormSubmit.
+- `sitemap.xml`, `robots.txt`, the canonical tag and the OG/Twitter URLs all hardcode the production host.
+
+## The Sheet-side spam filter
+
+`tools/sheet-spam-filter.gs` does not run on the website and is not served. It is
+Google Apps Script that lives in the responses spreadsheet (Extensions → Apps
+Script); the repo copy exists so the scoring rules are reviewable and versioned.
+Edit here, paste there — there is no deploy step that does it for you.
+
+It cannot refuse a submission, only quarantine one after the fact: each response is
+scored, and anything at or above `SPAM_THRESHOLD` is moved to a `Spam` sheet with
+its score and reasons recorded. **Nothing is deleted**, because a false positive has
+to be recoverable. Clean responses are emailed on to `NOTIFY_TO`.
+
+Three things to know before changing it:
+
+- **`score()` is pure on purpose.** History and the clock arrive as arguments, so
+  the rules can be exercised without a spreadsheet. Keep it that way: it is what lets
+  `runSelfTest()` check the rules from the editor, and what lets the same file be
+  scored under `node` with the Apps Script globals stubbed.
+- **`onFormSubmit` is trigger-only.** Pressing Run on it in the editor calls it with
+  no event object; it now says so instead of throwing a bare TypeError. `runSelfTest()`
+  is the function that is safe to Run.
+- **Velocity is weighted, never decisive.** A hailstorm over Utah County produces a
+  genuine burst of real leads, so 4-in-2-minutes only adds +2. What is decisive is a
+  repeated *content* fingerprint (+4), which weather does not cause.
+- **The rolling history lives in script properties, not the sheet.** Quarantined rows
+  leave the responses sheet, so a burst read off the sheet would erase its own
+  evidence.
 
 ## Image assets
 
@@ -99,7 +198,16 @@ Everything under `images/logo/` is generated from `images/logo/smr-logo-source.p
 
 ## Known outstanding items
 
-- The FormSubmit endpoint (`tayton@scenicmtnroofing.com`) needs its one-time email activation before submissions deliver.
+- The estimate form is wired to the live Google Form and Google accepts anonymous
+  submissions from the page (verified 2026-09-16: "Your response has been recorded").
+  **Confirm the form is linked to a Sheet** — acceptance only guarantees the response
+  reaches the form's Responses tab.
+- `tools/sheet-spam-filter.gs` is written and unit-tested but **not installed yet**.
+  It has to be pasted into the responses Sheet's Apps Script editor and its
+  `installTrigger()` run once; the file's header comment is the checklist. Until then
+  nothing is filtered. Step 5 of that checklist is the one people skip: Forms' own
+  "email me on new responses" fires before the script does, so leaving it on mails
+  you the spam anyway.
 - The `5.0 ★` Google rating in the stats block is hardcoded in `index.html`. Check it against the live Google Business listing whenever the stats are touched, since nothing keeps it in sync automatically.
 
 ## Facts about the business
