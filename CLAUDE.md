@@ -24,7 +24,7 @@ Browsers cache the CSS aggressively against `http.server`. When a style change a
 **Three-layer CSS, load order matters.** `index.html` pulls them in this order and the cascade depends on it:
 
 1. `css/normalize.css` — untouched vendor reset
-2. `css/main.css` — the design system. All tokens are custom properties in `:root` at the top (neutrals, `--accent`, `--font-display`/`--font-body`, an 8pt `--sp-*` scale, radii, shadows, `--header-h`, `--ease`). Component rules follow under `/* ── Name ── */` banners.
+2. `css/main.css` — the design system. All tokens are custom properties in `:root` at the top (neutrals, `--accent`, `--font-display`/`--font-body`, an 8pt `--sp-*` scale, radii, shadows, `--header-h`, `--ease`). Component rules follow under `/* ── Name ── */` banners. **The spacing scale is not contiguous** — it runs 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, so `var(--sp-7)` resolves to nothing and CSS drops the whole declaration without warning. `--actionbar-h` and `--header-real` are the only other `var()` targets not defined here; both are published at runtime by `js/main.js`.
 3. `css/responsive.css` — **overrides only**, at 1150 / 1024 / 860 / 780 / 640 / 560 / 420px, plus a print block
 
 Verify any layout change by *resizing a live page*, not only by loading fresh at each width — a fresh load hides anything that fails to recompute on resize, which is a different class of bug. (A convenient trick: load the page in an off-screen iframe and change the iframe's width without reloading it; media queries and resize handlers fire normally.) Note that Chrome will reuse an already-cached larger `srcset` candidate rather than downgrading, so `currentSrc` after a resize is not evidence of what a cold load fetches — cache-bust the image URLs to measure that.
@@ -76,6 +76,51 @@ In the drawer, `.nav-cta` uses `margin-top: auto` to pin the two CTAs to the bot
 **Reveal animations are gated on a `js` class.** An inline script in `<head>` sets `document.documentElement.classList.add('js')`, and only `.js .reveal` gets `opacity: 0`. Without that gate a blocked or failed script leaves most of the page blank. Any new scroll-revealed element needs the `reveal` class and nothing else.
 
 Related trap: `.form-banner` sets `display: flex`, which beats the UA stylesheet's `[hidden] { display: none }`. `.form-banner[hidden]` restores it explicitly. Any new component styled with an explicit `display` and toggled via the `hidden` attribute needs the same guard.
+
+### The Color Studio
+
+Three `[data-group]` blocks — `shingle`, `dripEdge`, `accessories` — each one an
+independent single-select whose chosen name is written into the matching
+`[data-choice]` hidden input by `paint()` in `js/color-studio.js`.
+
+**The shingle group holds two IKO product lines inside one `data-group`.** IKO
+Dynasty (15 colors, architectural) and IKO Armourshake (4 colors, premium designer)
+sit in sibling `.swatch-line` bands, each with its own `.swatches` grid so columns
+reflow per band instead of Armourshake's four trailing Dynasty's fifteen. One group,
+not two, for two reasons: a customer picks **one** shingle, so the lines must be
+mutually exclusive — which a shared group gives for free — and there is only one
+"Shingle color" question on the Google Form, so the line has to travel inside that
+single value. `color-studio.js` collects swatches with a descendant query
+(`group.querySelectorAll('.swatch')`), so nesting bands needs no JS change.
+
+The product line lives in **`data-name`**, not the visible label: `data-name="Dynasty
+— Granite Black"` with `<span class="swatch-name">Granite Black</span>`. `data-name`
+is what reaches the Sheet and the summary row, and Tayton needs the line to quote
+because the two differ in price. Keep the visible label clean.
+
+Three traps:
+
+- **Chips must set `background-color`, never the `background` shorthand.** `paint()`
+  reads `window.getComputedStyle(chip).backgroundColor` to tint the summary dot. A
+  gradient or shorthand that leaves `background-color` unset returns
+  `rgba(0, 0, 0, 0)` and the dot silently goes transparent.
+- **Shingle chips are textured, trim chips are not, and that is deliberate.**
+  `.swatch-chip::after` lays a `repeating-linear-gradient` granule striation over the
+  fill so an asphalt shingle does not read as a flat metal panel;
+  `.swatches--trim .swatch-chip::after { background-image: none; }` removes it,
+  because drip edge and accessories genuinely *are* smooth painted metal.
+- **Every hex is an eyeball approximation.** IKO publishes no hex values, and its
+  swatch photography is not licensed for reuse here — its color gallery renders via
+  AJAX and only one swatch image appears in the static HTML anyway. The values are
+  derived from the color names and IKO's own black/brown/grey group tagging. The
+  `.studio-note` under the panel says so; keep that disclaimer if you touch the
+  colors. Real swatches would come from IKO's ROOFPRO contractor portal.
+
+The authoritative color lists are IKO's product pages
+(`iko.com/na/product/dynasty/`, `.../armourshake/`). Note that IKO gates its color
+gallery by postal code and filters by color family client-side, so a filtered gallery
+URL shows a subset — `?color-group=black,brown` yields 8 Dynasty and 3 Armourshake,
+which is not an availability limit.
 
 ### The estimate form
 
@@ -198,16 +243,23 @@ Everything under `images/logo/` is generated from `images/logo/smr-logo-source.p
 
 ## Known outstanding items
 
+- The site is **live at `https://scenicmtnroofing.com`** on GitHub Pages, serving from
+  `main` at the repo root, with a Let's Encrypt certificate covering the apex and
+  `www` and "Enforce HTTPS" on. DNS stays at Squarespace: four A records to
+  `185.199.108-111.153`, `www` CNAME to `smootar.github.io`, and the Google Workspace
+  `MX`/SPF/DKIM untouched. **If you ever repoint this, add the DNS records before
+  setting the custom domain in Settings → Pages** — GitHub validates DNS at save time,
+  and a failed check leaves no `https_certificate` at all rather than a pending one;
+  the fix is to clear and re-set the custom domain.
 - The estimate form is wired to the live Google Form and Google accepts anonymous
-  submissions from the page (verified 2026-09-16: "Your response has been recorded").
+  submissions from the page (verified over HTTPS end to end, 2026-09-17).
   **Confirm the form is linked to a Sheet** — acceptance only guarantees the response
   reaches the form's Responses tab.
-- `tools/sheet-spam-filter.gs` is written and unit-tested but **not installed yet**.
-  It has to be pasted into the responses Sheet's Apps Script editor and its
-  `installTrigger()` run once; the file's header comment is the checklist. Until then
-  nothing is filtered. Step 5 of that checklist is the one people skip: Forms' own
-  "email me on new responses" fires before the script does, so leaving it on mails
-  you the spam anyway.
+- `tools/sheet-spam-filter.gs` is **installed and proven live** (2026-09-17): two
+  identical spam probes were both quarantined to the `Spam` sheet, and the second
+  carried the duplicate-fingerprint reason, which confirms the script-properties
+  history round-trips between trigger runs. Re-paste the file into the Sheet's Apps
+  Script editor after editing it here; there is no deploy step.
 - The `5.0 ★` Google rating in the stats block is hardcoded in `index.html`. Check it against the live Google Business listing whenever the stats are touched, since nothing keeps it in sync automatically.
 
 ## Facts about the business
